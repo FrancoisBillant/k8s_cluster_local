@@ -25,17 +25,18 @@ You can pass arguments to the script to personnalize the installation - see ./cr
 
 - To start the cluster:
 `./kubernetes-localhost.sh start`
+
 You can specify the ssh private key to use to connect to VMs with the -i argument. By default, if the -i argument is not provided, it uses ~/.ssh/id_rsa
 `./kubernetes-localhost.sh start -i /path/to/your/private/key`
 
 - To stop the cluster:
 `./kubernetes-localhost.sh stop`
 
-- TODO: Make a script to do that
-To remove everthing that has been created by the cluster:
-- Stop the cluster
-- Revome all 4 VMs and their disks
-- Remove the 2 networks k8s_front and k8s_back
+TODO: Make a script to do that
+- To remove everthing that has been created by the cluster:
+	- Stop the cluster
+	- Revome all 4 VMs and their disks
+	- Remove the 2 networks k8s_front and k8s_back
 
 AUTHOR
 ------
