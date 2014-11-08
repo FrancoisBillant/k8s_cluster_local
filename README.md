@@ -25,18 +25,15 @@ You can pass arguments to the script to personnalize the installation - see ./cr
 To start the cluster:
 
 
-AUTHOR:
+AUTHOR
+------
   Francois Billant <fbillant@gmail.com>
 
-LICENCE:
+LICENCE
+-------
   GPL v3 - see LICENSE
 
 
-# TODO:
-# - Begin by a function that check if the coreos image is present in the current directory.
-#   If it is not present, download it.
-# - Add a function/argument to ask the path of the key to inject and modify the yaml file accordingly
-# - Make the HDD_PATH more configurable through an argument
-# - Make the HDD_SIZE more configurable through an argument
-# - Make the RAM allocated to the VMs more configurable through an argument
-#
+TODO:
+- Make the RAM allocated to the VMs more configurable through an argument
+
