@@ -1,0 +1,53 @@
+#cloud-config 
+hostname: discovery
+ssh_authorized_keys:
+  # include one or more SSH public keys
+  - ssh-rsa your_public_key_here
+coreos:
+  units:
+    - name: static.network
+      command: start
+      content: |
+        [Match]
+        Name=eth0
+
+        [Network]
+        Address=192.168.23.100/24
+        DNS=8.8.8.8
+        Gateway=192.168.23.1
+    - name: etcd_discovery1.service
+      command: start
+      content: |
+        [Unit]
+        After=network-online.target
+        Description=Launch a etcd cluster on one machine
+        Requires=network-online.target
+
+        [Service]
+        ExecStart=/usr/bin/etcd -peer-addr 192.168.23.100:7001 -addr 192.168.23.100:4001 -name machine1
+    - name: etcd_discovery2.service
+      command: start
+      content: |
+        [Unit]
+        After=network-online.target
+        After=etcd_discovery1.service
+        Description=Launch a etcd cluster on one machine
+        Requires=network-online.target
+
+        [Service]
+        ExecStart=/usr/bin/etcd -peer-addr 192.168.23.100:7002 -addr 192.168.23.100:4002 --peers 192.168.23.100:7001,192.168.23.100:7003 -name machine2
+    - name: etcd_discovery3.service
+      command: start
+      content: |
+        [Unit]
+        After=network-online.target
+        After=etcd_discovery2.service
+        Description=Launch a etcd cluster on one machine
+        Requires=network-online.target
+
+        [Service]
+        ExecStart=/usr/bin/etcd -peer-addr 192.168.23.100:7003 -addr 192.168.23.100:4003 --peers 192.168.23.100:7001,192.168.23.100:7002 -name machine3
+
+  update:
+    group: alpha
+    reboot-strategy: off

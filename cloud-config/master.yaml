@@ -1,0 +1,217 @@
+#cloud-config 
+hostname: master
+ssh_authorized_keys:
+  # include one or more SSH public keys
+  - ssh-rsa your_public_key_here
+coreos:
+  etcd:
+    name: master
+    discovery: http://192.168.23.100:4001/v2/keys/k8s_cluster
+    addr: 192.168.23.111:4001
+    peer-addr: 192.168.23.111:7001
+    #peer-heartbeat-interval: 250
+    #peer-election-timeout: 1000
+  units:
+    - name: static.network
+      command: start
+      content: |
+        [Match]
+        Name=eth0
+
+        [Network]
+        Address=192.168.23.111/24
+        DNS=8.8.8.8
+        Gateway=192.168.23.1
+    - name: cbr0.netdev
+      command: start
+      content: |
+        [NetDev]
+        Kind=bridge
+        Name=cbr0
+    - name: cbr0.network
+      command: start
+      content: |
+        [Match]
+        Name=cbr0
+
+        [Network]
+        Address=10.244.0.1/24
+
+        [Route]
+        Destination=10.0.0.0/8
+        Gateway=0.0.0.0
+    - name: cbr0-interface.network
+      command: start
+      content: |
+        [Match]
+        Name=eth1
+
+        [Network]
+        Bridge=cbr0
+    - name: nat.service
+      command: start
+      content: |
+        [Unit]
+        Description=NAT non container traffic
+
+        [Service]
+        ExecStart=/usr/sbin/iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE ! -d 10.0.0.0/8
+        RemainAfterExit=yes
+        Type=oneshot
+    - name: etcd.service
+      command: start
+    - name: fleet.service
+      command: start
+    - name: docker.service
+      command: start
+      content: |
+        [Unit]
+        After=network.target
+        Description=Docker Application Container Engine
+        Documentation=http://docs.docker.io
+
+        [Service]
+        ExecStartPre=/bin/mount --make-rprivate /
+        ExecStart=/usr/bin/docker -d -s=btrfs -H fd:// -b cbr0 
+
+        [Install]
+        WantedBy=multi-user.target
+    - name: download-kubernetes.service
+      command: start
+      content: |
+        [Unit]
+        After=network-online.target
+        Before=k8s_apiserver.service
+        Before=k8s_controller_manager.service
+        Before=k8s_kubelet.service
+        Before=k8s_proxy.service
+        Description=Download Kubernetes Binaries
+        Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+        Requires=network-online.target
+
+        [Service]
+        ExecStart=/usr/bin/wget -N -P /opt/bin http://storage.googleapis.com/kubernetes/apiserver
+        ExecStart=/usr/bin/wget -N -P /opt/bin http://storage.googleapis.com/kubernetes/controller-manager
+        ExecStart=/usr/bin/wget -N -P /opt/bin http://storage.googleapis.com/kubernetes/kubecfg
+        ExecStart=/usr/bin/wget -N -P /opt/bin http://storage.googleapis.com/kubernetes/kubelet
+        ExecStart=/usr/bin/wget -N -P /opt/bin http://storage.googleapis.com/kubernetes/proxy
+        ExecStart=/usr/bin/wget -N -P /opt/bin http://storage.googleapis.com/kubernetes/scheduler
+        ExecStart=/usr/bin/chmod +x /opt/bin/apiserver
+        ExecStart=/usr/bin/chmod +x /opt/bin/controller-manager
+        ExecStart=/usr/bin/chmod +x /opt/bin/kubecfg
+        ExecStart=/usr/bin/chmod +x /opt/bin/kubelet
+        ExecStart=/usr/bin/chmod +x /opt/bin/proxy
+        ExecStart=/usr/bin/chmod +x /opt/bin/scheduler
+        RemainAfterExit=yes
+        Type=oneshot
+    - name: k8s_apiserver.service
+      command: start
+      content: |
+        [Unit]
+        After=etcd.service
+        After=download-kubernetes.service
+        ConditionFileIsExecutable=/opt/bin/apiserver
+        Description=Kubernetes API Server
+        Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+        Wants=etcd.service
+        Wants=download-kubernetes.service
+
+        [Service]
+        ExecStart=/opt/bin/apiserver \
+        --address=127.0.0.1 \
+        --port=8080 \
+        --etcd_servers=http://127.0.0.1:4001 \
+        --machines=192.168.23.111,192.168.23.112,192.168.23.113 \
+        --logtostderr=true
+        Restart=always
+        RestartSec=10
+
+        [Install]
+        WantedBy=multi-user.target
+    - name: k8s_scheduler.service
+      command: start
+      content: |
+        [Unit]
+        After=k8s_apiserver.service
+        After=download-kubernetes.service
+        ConditionFileIsExecutable=/opt/bin/scheduler
+        Description=Kubernetes Scheduler
+        Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+        Wants=k8s_apiserver.service
+
+        [Service]
+        ExecStart=/opt/bin/scheduler \
+        --logtostderr=true \
+        --master=127.0.0.1:8080
+        Restart=always
+        RestartSec=10
+
+        [Install]
+        WantedBy=multi-user.target
+    - name: k8s_controller_manager.service
+      command: start
+      content: |
+        [Unit]
+        After=etcd.service
+        After=download-kubernetes.service
+        ConditionFileIsExecutable=/opt/bin/controller-manager
+        Description=Kubernetes Controller Manager
+        Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+        Wants=etcd.service
+        Wants=download-kubernetes.service
+
+        [Service]
+        ExecStart=/opt/bin/controller-manager \
+        --master=127.0.0.1:8080 \
+        --logtostderr=true
+        Restart=always
+        RestartSec=10
+
+        [Install]
+        WantedBy=multi-user.target
+    - name: k8s_kubelet.service
+      command: start
+      content: |
+        [Unit]
+        After=etcd.service
+        After=download-kubernetes.service
+        ConditionFileIsExecutable=/opt/bin/kubelet
+        Description=Kubernetes Kubelet
+        Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+        Wants=etcd.service
+        Wants=download-kubernetes.service
+
+        [Service]
+        ExecStart=/opt/bin/kubelet \
+        --address=0.0.0.0 \
+        --port=10250 \
+        --hostname_override=192.168.23.111 \
+        --etcd_servers=http://127.0.0.1:4001 \
+        --logtostderr=true
+        Restart=always
+        RestartSec=10
+
+        [Install]
+        WantedBy=multi-user.target
+    - name: k8s_proxy.service
+      command: start
+      content: |
+        [Unit]
+        After=etcd.service
+        After=download-kubernetes.service
+        ConditionFileIsExecutable=/opt/bin/proxy
+        Description=Kubernetes Proxy
+        Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+        Wants=etcd.service
+        Wants=download-kubernetes.service
+
+        [Service]
+        ExecStart=/opt/bin/proxy --etcd_servers=http://127.0.0.1:4001 --logtostderr=true
+        Restart=always
+        RestartSec=10
+
+        [Install]
+        WantedBy=multi-user.target
+  update:
+    group: alpha
+    reboot-strategy: off
