@@ -32,7 +32,7 @@ You can specify the ssh private key to use to connect to VMs with the -i argumen
 - To stop the cluster:
 `./kubernetes-localhost.sh stop`
 
-TODO: Make a script to do that
+TODO: Make a script to remove everthing
 - To remove everthing that has been created by the cluster:
 	- Stop the cluster
 	- Revome all 4 VMs and their disks
