@@ -47,6 +47,6 @@ LICENCE
 
 
 TODO:
-- Make a script to remove everthing (https://github.com/FrancoisBillant/k8s_cluster_local/issues/1)
-- Make the RAM allocated to the VMs more configurable through an argument
-- Attribute less RAM to the discovery node due to its nature and resources usage
+- Make a script to remove everthing (issue #1)
+- Make the RAM allocated to the VMs more configurable through an argument (issue #2)
+- Attribute less RAM to the discovery node due to its nature and resources usage (issue #3)
