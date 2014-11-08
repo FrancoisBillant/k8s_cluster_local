@@ -6,6 +6,8 @@ It is made of:
 - 2 shell scripts
 	* `create_kubernetes_cluster.sh` to create and provision the VMs of the cluster
 	* `kubernetes-localhost.sh` to start/stop the cluster and connect to VMs
+- 1 cloud-config directory
+	* Contain the cloud-config yaml files for each node
 
 Requirements
 ------------
