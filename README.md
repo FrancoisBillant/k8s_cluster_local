@@ -14,23 +14,24 @@ Requirements
 - KVM
 - Libvirt
 - Kernel >= 3.8 (for btrf usage)
+- Tmux
 
 Usage
 -----
-To create the cluster:
+- To create the cluster:
 `./create_kubernetes_cluster.sh`
 
 You can pass arguments to the script to personnalize the installation - see ./create_kubernetes_cluster.sh -h`
 
-To start the cluster:
+- To start the cluster:
 `./kubernetes-localhost.sh start`
 You can specify the ssh private key to use to connect to VMs with the -i argument. By default, if the -i argument is not provided, it uses ~/.ssh/id_rsa
 `./kubernetes-localhost.sh start -i /path/to/your/private/key`
 
-To stop the cluster:
+- To stop the cluster:
 `./kubernetes-localhost.sh stop`
 
-TODO: Make a script to do that
+- TODO: Make a script to do that
 To remove everthing that has been created by the cluster:
 - Stop the cluster
 - Revome all 4 VMs and their disks
