@@ -13,6 +13,8 @@ Requirements
 ------------
 - KVM
 - Libvirt
+- libguestfs0
+- kpartx
 - Kernel >= 3.8 (for btrf usage)
 - Tmux
 
